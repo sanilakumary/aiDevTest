@@ -192,7 +192,50 @@ namespace aiCorporation.NewImproved
         /************************************************************/
         public SalesAgentList ToSalesAgentList()
         {
-            throw new NotImplementedException("You must implement this function");
+            // Create a dictionary of Sales Agent Builder for efficient lookup
+            var sadSalesAgentDict = new Dictionary<string, SalesAgentBuilder>();
+            foreach (var record in m_lsafrSalesAgentFileRecordList)
+            {
+                if (!sadSalesAgentDict.TryGetValue(record.SalesAgentEmailAddress, out var saSalesAgentBuilder))
+                {
+                    saSalesAgentBuilder = new SalesAgentBuilder
+                    {
+                        SalesAgentEmailAddress = record.SalesAgentEmailAddress,
+                        SalesAgentName = record.SalesAgentName
+                    };
+                    sadSalesAgentDict.Add(record.SalesAgentEmailAddress, saSalesAgentBuilder);
+                }
+
+                // Find or create Client Builder
+                var cClientBuilder = saSalesAgentBuilder.ClientList[record.ClientIdentifier];
+
+                if (cClientBuilder == null)
+                {
+                    cClientBuilder = new ClientBuilder
+                    {
+                        ClientIdentifier = record.ClientIdentifier,
+                        ClientName = record.ClientName
+                    };
+
+                    saSalesAgentBuilder.ClientList.Add(cClientBuilder);
+                }                
+
+                // Create and Add Bank Account Builder
+                var baBankAccountBuilder = new BankAccountBuilder()
+                {
+                    AccountNumber = record.AccountNumber,
+                    BankName = record.BankName,
+                    Currency = record.Currency,
+                    SortCode = record.SortCode
+                };
+
+                cClientBuilder.BankAccountList.Add(baBankAccountBuilder);
+            }
+
+            // Get sales agent list from Sales Agent Builder dictionary
+            var salSalesAgentList = sadSalesAgentDict.Values.Select(builder => builder.ToSalesAgent()).ToList();
+
+            return new SalesAgentList(salSalesAgentList);
         }
 
         public SalesAgentFileRecordList(List<SalesAgentFileRecord> lsafrSalesAgentFileRecordList)
